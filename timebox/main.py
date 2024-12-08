@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import glob
 import threading
+import platform
 
 # Set up logging
 def setup_logging():
@@ -21,7 +22,11 @@ def setup_logging():
     handlers = [logging.StreamHandler(sys.stdout)]
     
     # Add file handler if running as a service
-    brew_log = os.getenv('HOMEBREW_LOGS') or '/usr/local/var/log'
+    if platform.processor() == 'arm':
+        brew_log = os.getenv('HOMEBREW_LOGS') or '/opt/homebrew/var/log'
+    else:
+        brew_log = os.getenv('HOMEBREW_LOGS') or '/usr/local/var/log'
+
     log_file = os.path.join(brew_log, 'timebox.log')
     
     try:
