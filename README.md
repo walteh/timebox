@@ -1,57 +1,39 @@
-![Header](header.png)
+# Timebox
 
-# Timebox – macOS Menubar App
+A simple command-line timeboxing utility for Things 3, with an optional menu bar interface.
 
-A simple menubar app for macOS that adds Timeboxing and Pomodoro workflow support to Things 3.
+## Features
+- Shows all of today's tasks from Things 3 that have time tags
+- Groups tasks by project
+- Shows total time allocated for today
+- Menu bar interface for timing tasks
 
 ## Usage
 
-1. In Things 3, add time tags to your tasks (e.g., "30min", "45min", "1min", etc.)
-2. Move tasks to Today
-3. Run Timebox
-4. Click the 🥊 icon in your menu bar to see your tasks and start timing them
+1. In Things 3, add time tags to your tasks:
+   - "30min" or "30m"
+   - "45min" or "45m"
+   - etc.
 
-The app will show you:
-- Total time scheduled for today
-- List of all tasks with time tags
-- Quick-select buttons for common time intervals
+2. Run the script:
+```bash
+python main.py
+```
+
+This will:
+1. Show your tasks in the terminal
+2. Create a menu bar icon (🥊) for timing tasks
 
 ## Installation
 
-1. Clone this repository:
 ```bash
+# Clone the repository
 git clone https://github.com/yourusername/timebox.git
 cd timebox
+
+# Install dependencies
+pip install -e .
+
+# Run
+python main.py
 ```
-
-2. Install dependencies:
-```bash
-make install
-```
-
-3. Build the app:
-```bash
-make build
-```
-
-4. Run the app:
-- For development: `make run`
-- For production: Open `dist/Timebox.app`
-
-## Troubleshooting
-
-If you get a security warning when opening the app:
-1. Go to System Settings > Privacy & Security
-2. Click "Open Anyway" for Timebox.app
-
-Or run in terminal:
-```bash
-xattr -cr "dist/Timebox.app"
-```
-
----
-
-See also:
-
-- [mk1123/timebox](https://github.com/mk1123/timebox)
-- [visini/pomodoro](https://github.com/visini/pomodoro)

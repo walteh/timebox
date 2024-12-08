@@ -1,15 +1,12 @@
 [project]
 name = "timebox"
 version = "0.6.0"
-description = "Menu bar utility app (macOS) adding timeboxing functionality to Things 3"
+description = "Command line timeboxing utility for Things 3"
 authors = [
-    {name = "Camillo Visini", email = "c.visini@gmail.com"},
     {name = "Walter Scott", email = "me@walteh.com"}
 ]
 dependencies = [
     "rumps==0.4.0",
-    "pyobjc-core>=9.1.1",
-    "pyobjc-framework-cocoa>=9.1.1",
     "things.py==0.0.15",
 ]
 requires-python = ">=3.10"
