@@ -1,26 +1,20 @@
 APP_NAME := Timebox
 
-ifdef VERSION
-VERSION_SET := 1
-endif
+.PHONY: install build run clean
 
 install:
-	poetry install
-dev:
-	poetry run python main.py
-compile:
-	export APP_NAME=$(APP_NAME) && poetry run python setup.py py2app
-debug: compile
-	open "dist/$(APP_NAME).app/Contents/MacOS/$(APP_NAME)"
+	python -m pip install .
+	python -m pip install py2app
+
+build:
+	python setup.py py2app -A
+
+run:
+	python main.py
+
+clean:
+	rm -rf build dist *.egg-info
+
 release:
-ifeq ($(VERSION_SET),1)
-	export VERSION=$(VERSION) && export APP_NAME=$(APP_NAME) && poetry run python setup.py py2app
-	poetry version $(VERSION)
-	git add pyproject.toml
-	git commit -m "Release $(VERSION)"
-	git push
+	python setup.py py2app
 	cd dist && zip -r "$(APP_NAME).app.zip" "$(APP_NAME).app"
-	gh release create $(VERSION) 'dist/$(APP_NAME).app.zip#$(APP_NAME).app.zip'
-else
-	$(error VERSION not defined - use like this: make release VERSION=...)
-endif

@@ -8,3 +8,4 @@ build
 .npm
 .node_repl_history
 .eggs
+*.egg-info

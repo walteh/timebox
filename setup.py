@@ -1,32 +1,23 @@
-import os
 from setuptools import setup
 
-VERSION = "0.0.1"
-if "VERSION" in os.environ:
-    VERSION = os.getenv("VERSION")
-
-
-APP_NAME = "App"
-if "APP_NAME" in os.environ:
-    APP_NAME = os.getenv("APP_NAME")
-
-
-APP = ["main.py"]
-DATA_FILES = []
+APP = ['main.py']
+DATA_FILES = ['header.png']
 OPTIONS = {
-    "argv_emulation": True,
-    "iconfile": "icon.icns",
-    "plist": {
-        "CFBundleShortVersionString": VERSION,
-        "LSUIElement": True,
+    'argv_emulation': True,
+    'plist': {
+        'LSUIElement': True,
+        'CFBundleName': 'Timebox',
+        'CFBundleDisplayName': 'Timebox',
+        'CFBundleIdentifier': 'com.timebox.app',
+        'CFBundleVersion': '0.6.0',
+        'CFBundleShortVersionString': '0.6.0'
     },
-    "packages": ["rumps", "paramiko", "cffi"],
+    'packages': ['rumps'],
 }
 
 setup(
     app=APP,
-    name=APP_NAME,
     data_files=DATA_FILES,
-    options={"py2app": OPTIONS},
-    setup_requires=["py2app"],
+    options={'py2app': OPTIONS},
+    setup_requires=['py2app'],
 )

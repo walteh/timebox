@@ -2,54 +2,52 @@ import rumps
 import time
 import subprocess
 import shlex
-import sqlite3
-import os
+import logging
+import sys
+import things
 
-THINGS_SQLITE_PATH = "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/ThingsData-4R6L5/Things Database.thingsdatabase/main.sqlite"
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
-def timez():
-    return time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
-
-def get_things_today_tasks(index=0, complete_task=False):
-    conn = sqlite3.connect(os.path.expanduser(THINGS_SQLITE_PATH))
-    sql = (
-        "SELECT\n"
-        "            TAG.title,\n"
-        "            TASK.title,\n"
-        '            "things:///show?id=" || TASK.uuid\n'
-        "            FROM TMTask as TASK\n"
-        "            LEFT JOIN TMTaskTag TAGS ON TAGS.tasks = TASK.uuid\n"
-        "            LEFT JOIN TMTag TAG ON TAGS.tags = TAG.uuid\n"
-        "            LEFT OUTER JOIN TMTask PROJECT ON TASK.project = PROJECT.uuid\n"
-        "            LEFT OUTER JOIN TMArea AREA ON TASK.area = AREA.uuid\n"
-        "            WHERE TASK.trashed = 0 AND TASK.status = 0 AND TASK.type = 0 AND TAG.title IS NOT NULL\n"
-        "            AND TASK.start = 1\n"
-        "            AND TASK.startdate is NOT NULL\n"
-        "            ORDER BY TASK.todayIndex\n"
-        "            LIMIT 100"
-    )
-    tasks = []
+def get_things_today_tasks():
     try:
-        for row in conn.execute(sql):
-            tasks.append(row)
-    except:
-        pass
-    conn.close()
-    return tasks
+        logging.info("Fetching today's tasks from Things...")
+        tasks = things.today()
+        logging.info(f"Found {len(tasks)} tasks for today")
+        # Add debug logging to see task structure
+        for task in tasks:
+            logging.debug(f"Task data: {task}")
+        return tasks
+    except Exception as e:
+        logging.error(f"Error fetching tasks: {str(e)}")
+        return []
 
-
-def process_tasks(list_of_tasks):
+def process_tasks(tasks):
     processed_tasks = {}
-
-    for task_tuple in list_of_tasks:
-        if task_tuple[0][-3:] == "min":
-            processed_tasks[task_tuple[1]] = (
-                int(task_tuple[0][:-3]),
-                task_tuple[2],
-            )
-
+    logging.info(f"Processing {len(tasks)} tasks")
+    
+    for task in tasks:
+        logging.debug(f"Processing task: {task['title']}")
+        # Look for time tags (e.g., "30min")
+        if 'tags' in task:
+            time_tags = [tag for tag in task['tags'] if tag.endswith('min')]
+            if time_tags:
+                # Use the first time tag found
+                time_tag = time_tags[0]
+                minutes = int(time_tag[:-3])
+                processed_tasks[task['title']] = (
+                    minutes,
+                    f"things:///show?id={task['uuid']}"
+                )
+    
+    logging.info(f"Found {len(processed_tasks)} tasks with time tags")
     return processed_tasks
-
 
 def hour_formatter(minutes):
     if minutes // 60 > 0:
@@ -59,7 +57,6 @@ def hour_formatter(minutes):
             return f"{minutes // 60}h of work today!"
     else:
         return f"{minutes}min of work today!"
-
 
 class TimerApp(object):
     def toggle_button(self, sender):
