@@ -15,11 +15,30 @@ import glob
 import threading
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+def setup_logging():
+    """Configure logging to write to both stdout and the Homebrew log file"""
+    # Default to stdout for development
+    handlers = [logging.StreamHandler(sys.stdout)]
+    
+    # Add file handler if running as a service
+    brew_log = os.getenv('HOMEBREW_LOGS') or '/usr/local/var/log'
+    log_file = os.path.join(brew_log, 'timebox.log')
+    
+    try:
+        file_handler = logging.FileHandler(log_file)
+        handlers.append(file_handler)
+    except Exception as e:
+        print(f"Could not set up file logging to {log_file}: {e}")
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s',
+        handlers=handlers
+    )
+    
+    logging.info(f"Logging to {log_file}")
+
+setup_logging()
 
 def extract_minutes(tag: str) -> int | None:
     """Extract minutes from various time formats like '30min', '30 min', '30m', '30 m'"""
