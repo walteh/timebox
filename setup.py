@@ -1,23 +1,22 @@
 from setuptools import setup
 
 APP = ['main.py']
-DATA_FILES = ['header.png']
+DATA_FILES = []
 OPTIONS = {
     'argv_emulation': True,
     'plist': {
         'LSUIElement': True,
         'CFBundleName': 'Timebox',
         'CFBundleDisplayName': 'Timebox',
-        'CFBundleIdentifier': 'com.timebox.app',
-        'CFBundleVersion': '0.6.0',
-        'CFBundleShortVersionString': '0.6.0'
+        'CFBundleIdentifier': 'com.walteh.timebox',
+        'CFBundleVersion': '0.6.2'
     },
-    'packages': ['rumps'],
+    'packages': ['rumps', 'things', 'watchdog'],
 }
 
 setup(
     app=APP,
     data_files=DATA_FILES,
-    options={'py2app': OPTIONS},
-    setup_requires=['py2app'],
+    options={},
+    setup_requires=[],
 )

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "timebox"
-version = "0.6.1"
+version = "0.6.2"
 authors = [
     { name = "Walter Scott", email = "me@walteh.com" }
 ]
@@ -19,3 +19,6 @@ dependencies = [
 
 [project.scripts]
 timebox = "main:main"
+
+[tool.setuptools]
+packages = ["timebox"]
