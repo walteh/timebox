@@ -12,6 +12,7 @@ from watchdog.events import FileSystemEventHandler
 import os
 from pathlib import Path
 import glob
+import threading
 
 # Set up logging
 logging.basicConfig(
@@ -87,15 +88,43 @@ class ThingsDBHandler(FileSystemEventHandler):
         self.timer_app = timer_app
         self.last_sync = 0
         self.cooldown = 2  # Minimum seconds between syncs
+        self.retry_count = 0
+        self.max_retries = 3
+        self.sync_lock = threading.Lock()
 
     def on_modified(self, event):
         # Only sync if enough time has passed since last sync
         current_time = time.time()
         if current_time - self.last_sync > self.cooldown:
             self.last_sync = current_time
-            logging.info("Things database changed, syncing...")
-            # Call sync_data directly instead of using a timer
+            
+            # Try to acquire lock to prevent multiple syncs
+            if self.sync_lock.acquire(blocking=False):
+                try:
+                    logging.info("Things database changed, syncing...")
+                    # Run sync in a separate thread
+                    threading.Thread(target=self.safe_sync).start()
+                finally:
+                    self.sync_lock.release()
+
+    def safe_sync(self):
+        try:
             self.timer_app.sync_data()
+            self.retry_count = 0  # Reset retry count on success
+        except Exception as e:
+            if "NSWindow geometry should only be modified on the main thread" in str(e):
+                if self.retry_count < self.max_retries:
+                    self.retry_count += 1
+                    # Only log on first retry
+                    if self.retry_count == 1:
+                        logging.info("Sync failed, will retry in background...")
+                    time.sleep(0.5)
+                    self.safe_sync()
+                else:
+                    logging.error("Max retry attempts reached. Please sync manually.")
+                    self.retry_count = 0
+            else:
+                logging.error(f"Error during sync: {e}")
 
 class TimerApp:
     def __init__(self):
