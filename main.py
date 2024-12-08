@@ -28,25 +28,51 @@ def get_things_today_tasks():
         logging.error(f"Error fetching tasks: {str(e)}")
         return []
 
+def extract_minutes(tag):
+    """Extract minutes from various time formats like '30min', '30 min', '30m', '30 m'"""
+    # Remove spaces and convert to lowercase
+    tag = tag.lower().replace(' ', '')
+    
+    # Try to find a number followed by m or min
+    if tag.endswith('min') or tag.endswith('m'):
+        try:
+            # Remove 'min' or 'm' and convert to int
+            minutes = int(''.join(c for c in tag if c.isdigit()))
+            return minutes
+        except ValueError:
+            return None
+    return None
+
 def process_tasks(tasks):
-    processed_tasks = {}
+    processed_tasks = {}  # Will be {project_name: {task_title: (minutes, url)}}
     logging.info(f"Processing {len(tasks)} tasks")
     
     for task in tasks:
         logging.debug(f"Processing task: {task['title']}")
-        # Look for time tags (e.g., "30min")
         if 'tags' in task:
-            time_tags = [tag for tag in task['tags'] if tag.endswith('min')]
+            # Look for any tag that might represent time
+            time_tags = []
+            for tag in task['tags']:
+                if minutes := extract_minutes(tag):
+                    time_tags.append((tag, minutes))
+            
             if time_tags:
-                # Use the first time tag found
-                time_tag = time_tags[0]
-                minutes = int(time_tag[:-3])
-                processed_tasks[task['title']] = (
+                # Use the first valid time tag found
+                _, minutes = time_tags[0]
+                
+                # Get project name (or "No Project" if none)
+                project_name = task.get('project_title', 'No Project')
+                
+                # Initialize project dict if needed
+                if project_name not in processed_tasks:
+                    processed_tasks[project_name] = {}
+                
+                processed_tasks[project_name][task['title']] = (
                     minutes,
                     f"things:///show?id={task['uuid']}"
                 )
     
-    logging.info(f"Found {len(processed_tasks)} tasks with time tags")
+    logging.info(f"Found tasks in {len(processed_tasks)} projects")
     return processed_tasks
 
 def hour_formatter(minutes):
@@ -108,46 +134,78 @@ class TimerApp(object):
         self.sync_data()
 
     def sync_data(self):
-
         for key, btn in self.buttons.items():
             btn.set_callback(self.buttons_callback[btn.title])
 
         self.things_tasks = get_things_today_tasks()
-
         self.things_processed_tasks = process_tasks(self.things_tasks)
 
-        self.sum_of_tasks_scheduled = sum(
-            [x[0] for x in self.things_processed_tasks.values()]
+        # Calculate total time across all projects
+        total_minutes = sum(
+            task_data[0] 
+            for project_tasks in self.things_processed_tasks.values() 
+            for task_data in project_tasks.values()
         )
+        
+        self.app.menu["sum_total_time"].title = f"{hour_formatter(total_minutes)}"
 
-        self.app.menu[
-            "sum_total_time"
-        ].title = f"{hour_formatter(self.sum_of_tasks_scheduled)}"
-
+        # Remove old menu items
         if hasattr(self, "things_buttons"):
-            prev_things_buttons = self.things_buttons
-            for title in prev_things_buttons.keys():
-                del self.app.menu[prev_things_buttons[title].title]
+            for project_items in self.things_buttons.values():
+                for title in project_items:
+                    del self.app.menu[title]
 
-        self.things_buttons = {
-            f"{title} → {time}min": rumps.MenuItem(
-                title=f"{title} → {time}min",
-                callback=lambda _, j=time, k=task_url: self.set_mins(_, j, k),
-            )
-            for title, (time, task_url) in self.things_processed_tasks.items()
-        }
+        # Create new menu structure
+        self.things_buttons = {}
+        
+        # Add a separator after the total time
+        self.app.menu.insert_after("sum_total_time", None)
+        last_item = "sum_total_time"
+        
+        for project_name, project_tasks in self.things_processed_tasks.items():
+            # Add project header if there are tasks
+            if project_tasks:
+                project_header = f"—— {project_name} ——"
+                header_item = rumps.MenuItem(project_header, callback=None)
+                self.app.menu.insert_after(last_item, header_item)
+                last_item = project_header
+                
+                # Initialize project in things_buttons
+                self.things_buttons[project_name] = []
+                
+                # Add tasks under project header
+                for title, (time, task_url) in project_tasks.items():
+                    menu_title = f"{title} → {time}min"
+                    menu_item = rumps.MenuItem(
+                        title=menu_title,
+                        callback=lambda _, j=time, k=task_url: self.set_mins(_, j, k),
+                    )
+                    self.app.menu.insert_after(last_item, menu_item)
+                    self.things_buttons[project_name].append(menu_title)
+                    last_item = menu_title
 
-        for title, menu_item in reversed(self.things_buttons.items()):
-            self.app.menu.insert_after("sum_total_time", menu_item)
+        # Add a separator before the fixed-time buttons
+        self.app.menu.insert_after(last_item, None)
 
     def run(self):
-        self.app.menu[
-            "sum_total_time"
-        ].title = f"{hour_formatter(self.sum_of_tasks_scheduled)}"
+        # Calculate total time
+        total_minutes = sum(
+            task_data[0] 
+            for project_tasks in self.things_processed_tasks.values() 
+            for task_data in project_tasks.values()
+        )
+        self.app.menu["sum_total_time"].title = f"{hour_formatter(total_minutes)}"
         self.app.run()
 
     def set_mins(self, sender, interval, task_url):
-        for btn in [*self.things_buttons.values(), *self.buttons.values()]:
+        # Flatten all menu items for comparison
+        all_menu_items = [
+            item
+            for project_items in self.things_buttons.values()
+            for item in project_items
+        ] + list(self.buttons.values())
+
+        for btn in all_menu_items:
             if sender.title == btn.title:
                 self.interval = interval * 60
                 cleaned_title = " ".join(sender.title.split()[:-2])
