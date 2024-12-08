@@ -28,7 +28,7 @@ This will:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/timebox.git
+git clone https://github.com/walteh/timebox.git
 cd timebox
 
 # Install dependencies
