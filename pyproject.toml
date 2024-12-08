@@ -1,7 +1,7 @@
 [project]
 name = "timebox"
 version = "0.6.0"
-description = "Command line timeboxing utility for Things 3"
+description = "Command line timeboxing utility for Things 3 in the macOS menu bar"
 authors = [
     {name = "Walter Scott", email = "me@walteh.com"}
 ]
